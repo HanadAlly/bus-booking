@@ -82,3 +82,32 @@ class Booking(Base):
         if self.bus and (seat > self.bus.capacity):
             raise ValueError(f"Seat number must be between 1 and {self.bus.capacity}")
         return seat
+
+    @classmethod
+    def create(cls, session, passenger_name, seat_number, bus):
+        if session.query(cls).filter_by(bus_id=bus.id, seat_number=seat_number).first():
+            raise ValueError("Seat already booked")
+        booking = cls(passenger_name=passenger_name, seat_number=seat_number, bus=bus)
+        session.add(booking)
+        session.commit()
+        return booking
+
+    @classmethod
+    def delete(cls, session, booking_id):
+        booking = session.query(cls).get(booking_id)
+        if booking:
+            session.delete(booking)
+            session.commit()
+            return True
+        return False
+
+    @classmethod
+    def get_all(cls, session):
+        return session.query(cls).all()
+
+    @classmethod
+    def find_by_id(cls, session, booking_id):
+        return session.query(cls).get(booking_id)
+
+    def __repr__(self):
+        return f"<Booking(id={self.id}, passenger={self.passenger_name}, seat={self.seat_number}, bus_id={self.bus_id})>"
