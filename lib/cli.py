@@ -95,3 +95,64 @@ def find_bus(bus_id):
     else:
         click.echo(f"Error: Bus with ID {bus_id} not found")
 
+@cli.command()
+@click.argument('booking_id', type=int)
+def find_booking(booking_id):
+    """Find a booking by BOOKING_ID"""
+    session = setup_database()
+    booking = Booking.find_by_id(session, booking_id)
+    if booking:
+        click.echo(f"Booking ID: {booking.id}, Passenger: {booking.passenger_name}, Seat: {booking.seat_number}, Bus ID: {booking.bus_id}")
+    else:
+        click.echo(f"Error: Booking with ID {booking_id} not found")
+
+def main_menu():
+    while True:
+        click.clear()
+        click.echo("Bus Booking System")
+        click.echo("1. Add Bus")
+        click.echo("2. Add Booking")
+        click.echo("3. List Buses")
+        click.echo("4. List Bookings")
+        click.echo("5. Delete Bus")
+        click.echo("6. Delete Booking")
+        click.echo("7. Find Bus")
+        click.echo("8. Find Booking")
+        click.echo("9. Exit")
+        choice = click.prompt("Select an option (1-9)", type=int)
+        
+        if choice == 1:
+            route = click.prompt("Enter route")
+            capacity = click.prompt("Enter capacity", type=int)
+            add_bus(route, capacity)
+        elif choice == 2:
+            bus_id = click.prompt("Enter bus ID", type=int)
+            passenger_name = click.prompt("Enter passenger name")
+            seat_number = click.prompt("Enter seat number", type=int)
+            add_booking(bus_id, passenger_name, seat_number)
+        elif choice == 3:
+            list_buses()
+        elif choice == 4:
+            bus_id = click.prompt("Enter bus ID", type=int)
+            list_bookings(bus_id)
+        elif choice == 5:
+            bus_id = click.prompt("Enter bus ID", type=int)
+            delete_bus(bus_id)
+        elif choice == 6:
+            booking_id = click.prompt("Enter booking ID", type=int)
+            delete_booking(booking_id)
+        elif choice == 7:
+            bus_id = click.prompt("Enter bus ID", type=int)
+            find_bus(bus_id)
+        elif choice == 8:
+            booking_id = click.prompt("Enter booking ID", type=int)
+            find_booking(booking_id)
+        elif choice == 9:
+            click.echo("Exiting...")
+            break
+        else:
+            click.echo("Invalid option. Please select 1-9.")
+        click.pause()
+
+if __name__ == '__main__':
+    main_menu()
