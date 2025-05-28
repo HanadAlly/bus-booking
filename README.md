@@ -26,3 +26,6 @@ Run `python3 lib/cli.py` in the virtual environment to access the interactive me
 - Python 3.8+
 - SQLite
 - Pipenv
+
+## Author
+Ali Hanad Mohammed
