@@ -54,3 +54,31 @@ class Bus(Base):
 
     def __repr__(self):
         return f"<Bus(id={self.id}, route={self.route}, capacity={self.capacity})>"
+
+class Booking(Base):
+    __tablename__ = 'bookings'
+
+    id = Column(Integer, primary_key=True)
+    passenger_name = Column(String, nullable=False)
+    seat_number = Column(Integer, nullable=False)
+    bus_id = Column(Integer, ForeignKey('buses.id'), nullable=False)
+    bus = relationship('Bus', back_populates='bookings')
+
+    def __init__(self, passenger_name, seat_number, bus):
+        self.passenger_name = passenger_name
+        self.seat_number = seat_number
+        self.bus = bus
+
+    @validates('passenger_name')
+    def validate_passenger_name(self, key, name):
+        if not name or len(name.strip()) < 2:
+            raise ValueError("Passenger name must be at least 2 characters long")
+        return name
+
+    @validates('seat_number')
+    def validate_seat_number(self, key, seat):
+        if not isinstance(seat, int) or seat <= 0:
+            raise ValueError("Seat number must be a positive integer")
+        if self.bus and (seat > self.bus.capacity):
+            raise ValueError(f"Seat number must be between 1 and {self.bus.capacity}")
+        return seat
