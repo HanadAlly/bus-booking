@@ -1,8 +1,59 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, validates
 
 Base = declarative_base()
+
+class Client(Base):
+    __tablename__ = 'clients'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    bookings = relationship('Booking', back_populates='client', cascade='all, delete-orphan')
+
+    def __init__(self, name, email):
+        self.name = name
+        self.email = email
+
+    @validates('name')
+    def validate_name(self, key, name):
+        if not name or len(name.strip()) < 2:
+            raise ValueError("Name must be at least 2 characters long")
+        return name
+
+    @validates('email')
+    def validate_email(self, key, email):
+        if '@' not in email or '.' not in email:
+            raise ValueError("Invalid email format")
+        return email
+
+    @classmethod
+    def create(cls, session, name, email):
+        client = cls(name=name, email=email)
+        session.add(client)
+        session.commit()
+        return client
+
+    @classmethod
+    def get_all(cls, session):
+        return session.query(cls).all()
+
+    @classmethod
+    def find_by_id(cls, session, client_id):
+        return session.query(cls).get(client_id)
+
+    @classmethod
+    def delete(cls, session, client_id):
+        client = cls.find_by_id(session, client_id)
+        if client:
+            session.delete(client)
+            session.commit()
+            return True
+        return False
+
+    def __repr__(self):
+        return f"<Client(id={self.id}, name={self.name}, email={self.email})>"
 
 class Bus(Base):
     __tablename__ = 'buses'
@@ -59,21 +110,16 @@ class Booking(Base):
     __tablename__ = 'bookings'
 
     id = Column(Integer, primary_key=True)
-    passenger_name = Column(String, nullable=False)
     seat_number = Column(Integer, nullable=False)
+    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
     bus_id = Column(Integer, ForeignKey('buses.id'), nullable=False)
+    client = relationship('Client', back_populates='bookings')
     bus = relationship('Bus', back_populates='bookings')
 
-    def __init__(self, passenger_name, seat_number, bus):
-        self.passenger_name = passenger_name
+    def __init__(self, seat_number, client, bus):
         self.seat_number = seat_number
+        self.client = client
         self.bus = bus
-
-    @validates('passenger_name')
-    def validate_passenger_name(self, key, name):
-        if not name or len(name.strip()) < 2:
-            raise ValueError("Passenger name must be at least 2 characters long")
-        return name
 
     @validates('seat_number')
     def validate_seat_number(self, key, seat):
@@ -84,10 +130,10 @@ class Booking(Base):
         return seat
 
     @classmethod
-    def create(cls, session, passenger_name, seat_number, bus):
+    def create(cls, session, seat_number, client, bus):
         if session.query(cls).filter_by(bus_id=bus.id, seat_number=seat_number).first():
             raise ValueError("Seat already booked")
-        booking = cls(passenger_name=passenger_name, seat_number=seat_number, bus=bus)
+        booking = cls(seat_number=seat_number, client=client, bus=bus)
         session.add(booking)
         session.commit()
         return booking
@@ -110,4 +156,4 @@ class Booking(Base):
         return session.query(cls).get(booking_id)
 
     def __repr__(self):
-        return f"<Booking(id={self.id}, passenger={self.passenger_name}, seat={self.seat_number}, bus_id={self.bus_id})>"
+        return f"<Booking(id={self.id}, seat={self.seat_number}, client_id={self.client_id}, bus_id={self.bus_id})>"
